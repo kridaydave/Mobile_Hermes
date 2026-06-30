@@ -11,14 +11,36 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 LOCAL_CONFIG="$SCRIPT_DIR/config.local.json"
 DOWNLOAD_CONFIG="/sdcard/Download/mobile-hermes-config.json"
 
+validate_config() {
+  python - "$1" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+if not config_path.exists():
+    raise SystemExit(f"missing config: {config_path}")
+text = config_path.read_text(encoding="utf-8").strip()
+if not text:
+    raise SystemExit(f"empty config: {config_path}")
+config = json.loads(text)
+if not isinstance(config, dict):
+    raise SystemExit(f"config must be a JSON object: {config_path}")
+PY
+}
+
+install_config() {
+  source_config="$1"
+  validate_config "$source_config"
+  cp "$source_config" "$CONFIG"
+  chmod 600 "$CONFIG"
+  echo "Installed local Mobile Hermes config from $source_config."
+}
+
 if [ -f "$LOCAL_CONFIG" ]; then
-  cp "$LOCAL_CONFIG" "$CONFIG"
-  chmod 600 "$CONFIG"
-  echo "Installed local Mobile Hermes config from $LOCAL_CONFIG."
+  install_config "$LOCAL_CONFIG"
 elif [ -f "$DOWNLOAD_CONFIG" ]; then
-  cp "$DOWNLOAD_CONFIG" "$CONFIG"
-  chmod 600 "$CONFIG"
-  echo "Installed local Mobile Hermes config from $DOWNLOAD_CONFIG."
+  install_config "$DOWNLOAD_CONFIG"
 elif [ ! -f "$CONFIG" ]; then
   cat > "$CONFIG" <<'JSON'
 {
