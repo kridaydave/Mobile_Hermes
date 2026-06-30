@@ -4,12 +4,14 @@ set -eu
 pkg update -y
 pkg install -y android-tools git python termux-api
 
-mkdir -p "$HOME/.mobile-hermes/logs"
-
 CONFIG="$HOME/.mobile-hermes/config.json"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 LOCAL_CONFIG="$SCRIPT_DIR/config.local.json"
 DOWNLOAD_CONFIG="/sdcard/Download/mobile-hermes-config.json"
+
+mkdir -p "$HOME/.mobile-hermes/logs"
+python "$SCRIPT_DIR/mobile-hermes-manifest.py" init
+python "$SCRIPT_DIR/mobile-hermes-manifest.py" add-path "$HOME/.mobile-hermes/config.json" "$HOME/.mobile-hermes/logs" "$HOME/.mobile-hermes/hermes.env" "$HOME/.mobile-hermes/rotation_state.json" "$HOME/.mobile-hermes/bridge.pid" "$HOME/.mobile-hermes/last_screen.png"
 
 validate_config() {
   python - "$1" <<'PY'
@@ -65,7 +67,7 @@ elif [ ! -f "$CONFIG" ]; then
 JSON
 fi
 
-chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh mobile-hermes-config-summary.sh mobile-hermes-set-telegram.sh mobile-hermes-bootstrap.sh mobile-hermes-chat.sh mobile-hermes-env.py 2>/dev/null || true
+chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh mobile-hermes-config-summary.sh mobile-hermes-set-telegram.sh mobile-hermes-bootstrap.sh mobile-hermes-chat.sh mobile-hermes-env.py mobile-hermes-manifest.py mobile-hermes-cleanup.sh 2>/dev/null || true
 
 echo "Mobile Hermes Termux setup complete."
 echo "Config lives at $CONFIG"

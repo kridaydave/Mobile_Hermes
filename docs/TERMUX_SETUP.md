@@ -39,7 +39,7 @@ In the app:
 
 Use `Pure Termux` first. It is lighter and better for a phone. `Ubuntu` uses `proot-distro` and is mainly a fallback if Hermes needs a more normal Linux userspace.
 
-The wizard runs:
+The wizard clones or updates `https://github.com/kridaydave/Mobile_Hermes.git` into `~/Mobile_Hermes` when needed, then runs:
 
 ```sh
 cd ~/Mobile_Hermes/termux && sh mobile-hermes-bootstrap.sh pure-termux
@@ -50,6 +50,35 @@ or:
 ```sh
 cd ~/Mobile_Hermes/termux && sh mobile-hermes-bootstrap.sh ubuntu
 ```
+
+The app also starts the bridge after setup:
+
+```sh
+sh mobile-hermes-start.sh
+```
+
+## Cleanup / uninstall backend
+
+Mobile Hermes writes an ownership ledger at:
+
+```text
+~/.mobile-hermes/install-manifest.json
+```
+
+To remove the backend from Termux:
+
+```sh
+cd ~/Mobile_Hermes/termux
+sh mobile-hermes-cleanup.sh
+```
+
+The cleanup script prints exactly what it is about to remove and requires the typed confirmation:
+
+```text
+DELETE MOBILE HERMES
+```
+
+It removes only Mobile Hermes-owned runtime paths, generated env/log/rotation files, bridge pid, copied config, app-cloned repo artifacts when recorded, and the Ubuntu proot distro only if Mobile Hermes recorded that install. It does not remove Termux, unrelated packages, unrelated proot distros, broad home directories, Android app data, or API-key source files outside Mobile Hermes-owned copies.
 
 ## Import keys from Desktop/Scratch
 

@@ -13,6 +13,7 @@ from typing import Any
 
 APP_DIR = Path.home() / ".mobile-hermes"
 CONFIG_PATH = APP_DIR / "config.json"
+MANIFEST_PATH = APP_DIR / "install-manifest.json"
 SCREENSHOT_PATH = APP_DIR / "last_screen.png"
 UI_DUMP_DEVICE_PATH = "/sdcard/mobile_hermes_window.xml"
 ROTATION_STATE_PATH = APP_DIR / "rotation_state.json"
@@ -79,6 +80,43 @@ def provider_summary() -> dict[str, Any]:
         "primary_provider": raw.get("primary_provider", ""),
         "providers": summary,
         "telegram_configured": bool(raw.get("telegram", {}).get("bot_token", "")) if isinstance(raw.get("telegram"), dict) else False,
+    }
+
+
+def setup_status() -> dict[str, Any]:
+    termux_properties = Path.home() / ".termux" / "termux.properties"
+    external_commands = False
+    if termux_properties.exists():
+        external_commands = "allow-external-apps=true" in termux_properties.read_text(
+            encoding="utf-8",
+            errors="replace",
+        )
+
+    config_present = CONFIG_PATH.exists()
+    provider_count = 0
+    if config_present:
+        raw = load_config()
+        providers = raw.get("providers", {})
+        provider_count = len(providers) if isinstance(providers, dict) else 0
+
+    pid = None
+    pid_file = APP_DIR / "bridge.pid"
+    if pid_file.exists():
+        pid = pid_file.read_text(encoding="utf-8", errors="replace").strip()
+
+    hermes_check = run_command(["sh", "-lc", "command -v hermes >/dev/null 2>&1"], timeout=5)
+    return {
+        "ok": True,
+        "termux_home": str(Path.home()),
+        "external_commands": external_commands,
+        "external_commands_hint": "~/.termux/termux.properties must contain allow-external-apps=true, then Termux must be restarted.",
+        "config_present": config_present,
+        "provider_count": provider_count,
+        "hermes_cli": hermes_check["ok"],
+        "bridge_pid": pid,
+        "manifest_present": MANIFEST_PATH.exists(),
+        "pure_termux_default": True,
+        "telegram_optional": True,
     }
 
 
@@ -319,6 +357,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/providers":
             self.respond(provider_summary())
+            return
+        if self.path == "/setup/status":
+            self.respond(setup_status())
             return
         self.respond({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 
