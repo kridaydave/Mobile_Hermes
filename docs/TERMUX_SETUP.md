@@ -17,6 +17,40 @@ sh setup.sh
 
 The setup script installs Python, Git, Android tools, and creates local config/log directories.
 
+## App-guided backend setup
+
+The Android app now has a backend wizard. It can run Termux scripts directly only when Termux allows external commands.
+
+Enable this once in Termux:
+
+```sh
+mkdir -p ~/.termux
+printf 'allow-external-apps=true\n' >> ~/.termux/termux.properties
+```
+
+Then force stop and reopen Termux.
+
+In the app:
+
+1. Open Mobile Hermes.
+2. Choose `Pure Termux` or `Ubuntu`.
+3. Tap `Run setup in Termux`.
+4. If Android/Termux blocks the direct command, tap `Copy setup command`, open Termux, and paste it manually.
+
+Use `Pure Termux` first. It is lighter and better for a phone. `Ubuntu` uses `proot-distro` and is mainly a fallback if Hermes needs a more normal Linux userspace.
+
+The wizard runs:
+
+```sh
+cd ~/Mobile_Hermes/termux && sh mobile-hermes-bootstrap.sh pure-termux
+```
+
+or:
+
+```sh
+cd ~/Mobile_Hermes/termux && sh mobile-hermes-bootstrap.sh ubuntu
+```
+
 ## Import keys from Desktop/Scratch
 
 Do not paste API keys into git. On the Windows desktop, create a local ignored config from `Desktop/Scratch`:
@@ -55,6 +89,8 @@ The config supports provider-level round-robin key rotation for OpenRouter, Open
 
 ## Telegram token
 
+Telegram is now optional because the app has a local chat interface that talks to the Termux bridge.
+
 If you want the importer to include a Telegram bot token without editing JSON manually, run:
 
 ```powershell
@@ -92,6 +128,14 @@ The bridge listens on:
 ```text
 http://127.0.0.1:8765
 ```
+
+The app chat sends messages to:
+
+```text
+POST http://127.0.0.1:8765/chat
+```
+
+The bridge calls `mobile-hermes-chat.sh`, which loads the next configured provider key in round-robin order before invoking Hermes.
 
 ## Wireless ADB
 

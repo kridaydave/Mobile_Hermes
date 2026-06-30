@@ -16,6 +16,7 @@ CONFIG_PATH = APP_DIR / "config.json"
 SCREENSHOT_PATH = APP_DIR / "last_screen.png"
 UI_DUMP_DEVICE_PATH = "/sdcard/mobile_hermes_window.xml"
 ROTATION_STATE_PATH = APP_DIR / "rotation_state.json"
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 @dataclass(frozen=True)
@@ -254,6 +255,18 @@ def handle_command(text: str) -> dict[str, Any]:
     }
 
 
+def chat(text: str) -> dict[str, Any]:
+    if not text.strip():
+        return {"ok": False, "error": "chat text is empty"}
+    result = run_command(["sh", str(SCRIPT_DIR / "mobile-hermes-chat.sh"), text], timeout=120)
+    return {
+        "ok": result["ok"],
+        "action": "chat",
+        "response": result["stdout"].strip() if result["stdout"].strip() else result["stderr"].strip(),
+        "result": result,
+    }
+
+
 def launch_package(package_name: str) -> dict[str, Any]:
     result = adb("shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1")
     return {"ok": result["ok"], "action": "launch_package", "package": package_name, "result": result}
@@ -313,6 +326,9 @@ class Handler(BaseHTTPRequestHandler):
         body = self.read_json()
         if self.path == "/command":
             self.respond(handle_command(str(body.get("text", ""))))
+            return
+        if self.path == "/chat":
+            self.respond(chat(str(body.get("text", ""))))
             return
         if self.path == "/adb/connect":
             host = str(body.get("host", ""))

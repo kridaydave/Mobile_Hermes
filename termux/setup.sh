@@ -65,10 +65,11 @@ elif [ ! -f "$CONFIG" ]; then
 JSON
 fi
 
-chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh mobile-hermes-config-summary.sh mobile-hermes-set-telegram.sh 2>/dev/null || true
+chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh mobile-hermes-config-summary.sh mobile-hermes-set-telegram.sh mobile-hermes-bootstrap.sh mobile-hermes-chat.sh mobile-hermes-env.py 2>/dev/null || true
 
 echo "Mobile Hermes Termux setup complete."
 echo "Config lives at $CONFIG"
 echo "Check config without printing keys: sh mobile-hermes-config-summary.sh"
 echo "Set Telegram token locally: sh mobile-hermes-set-telegram.sh"
+echo "Install backend: sh mobile-hermes-bootstrap.sh pure-termux"
 echo "Run: sh mobile-hermes-start.sh"

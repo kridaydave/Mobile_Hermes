@@ -12,6 +12,8 @@ The app is designed for one owner, sideloaded APK distribution, and local-first 
 - Support proactive notifications and scheduled tasks.
 - Automate Chrome, WhatsApp, YouTube, and browser workflows using ADB.
 - Ask before risky actions such as sending messages, deleting data, purchases, posting, or changing settings.
+- Provide local in-app chat so Telegram is optional.
+- Guide backend setup from the app for pure Termux or Ubuntu/proot.
 
 ## Non-goals for v1
 
@@ -33,11 +35,11 @@ memory/                 Local crew notes, not part of the mobile runtime
 ## First install flow
 
 1. Install Termux from F-Droid.
-2. Run `termux/setup.sh` inside Termux.
-3. Enable Android Developer Options and Wireless Debugging.
-4. Pair ADB using the setup wizard in the Android app or the bridge endpoints.
-5. Start the foreground service in the app.
-6. Add API keys locally on the phone. Do not commit keys to this repo.
+2. Put `config.local.json` in `Mobile_Hermes/termux/` or `/sdcard/Download/mobile-hermes-config.json`.
+3. Open Mobile Hermes and use the backend wizard, or run `termux/mobile-hermes-bootstrap.sh pure-termux` inside Termux.
+4. Start the foreground service in the app.
+5. Chat through the app. Telegram is optional.
+6. Enable Wireless Debugging later when you want browser/app automation.
 
 ## Current status
 

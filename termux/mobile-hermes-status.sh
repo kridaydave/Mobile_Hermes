@@ -16,3 +16,10 @@ echo
 if [ -x "./mobile-hermes-config-summary.sh" ]; then
   sh ./mobile-hermes-config-summary.sh || true
 fi
+
+echo
+if command -v hermes >/dev/null 2>&1; then
+  echo "Hermes CLI: $(command -v hermes)"
+else
+  echo "Hermes CLI: not installed yet"
+fi

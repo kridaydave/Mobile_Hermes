@@ -23,6 +23,16 @@ class BridgeClient(
         }
     }
 
+    suspend fun chat(text: String): Result<String> = runCatching {
+        withContext(Dispatchers.IO) {
+            post("/chat", """{"text":${jsonString(text)}}""")
+        }
+    }
+
+    suspend fun providers(): Result<String> = runCatching {
+        withContext(Dispatchers.IO) { get("/providers") }
+    }
+
     private fun get(path: String): String {
         val connection = open(path, "GET")
         return connection.useResponse()
