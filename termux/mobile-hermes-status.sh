@@ -12,3 +12,7 @@ fi
 echo "ADB devices:"
 adb devices || true
 
+echo
+if [ -x "./mobile-hermes-config-summary.sh" ]; then
+  sh ./mobile-hermes-config-summary.sh || true
+fi

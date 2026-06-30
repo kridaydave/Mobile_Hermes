@@ -15,6 +15,7 @@ APP_DIR = Path.home() / ".mobile-hermes"
 CONFIG_PATH = APP_DIR / "config.json"
 SCREENSHOT_PATH = APP_DIR / "last_screen.png"
 UI_DUMP_DEVICE_PATH = "/sdcard/mobile_hermes_window.xml"
+ROTATION_STATE_PATH = APP_DIR / "rotation_state.json"
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,87 @@ def bridge_config() -> BridgeConfig:
         host=str(raw.get("bridge_host", "127.0.0.1")),
         port=int(raw.get("bridge_port", 8765)),
     )
+
+
+def save_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def load_rotation_state() -> dict[str, int]:
+    if not ROTATION_STATE_PATH.exists():
+        return {}
+    try:
+        with ROTATION_STATE_PATH.open("r", encoding="utf-8") as state_file:
+            state = json.load(state_file)
+    except json.JSONDecodeError:
+        return {}
+    return {str(key): int(value) for key, value in state.items()} if isinstance(state, dict) else {}
+
+
+def provider_summary() -> dict[str, Any]:
+    raw = load_config()
+    providers = raw.get("providers", {})
+    if not isinstance(providers, dict):
+        providers = {}
+    summary: dict[str, Any] = {}
+    for provider_id, provider in providers.items():
+        if not isinstance(provider, dict):
+            continue
+        keys = provider.get("keys", [])
+        models = provider.get("models", [])
+        summary[str(provider_id)] = {
+            "name": provider.get("name", provider_id),
+            "base_url": provider.get("base_url", ""),
+            "key_count": len(keys) if isinstance(keys, list) else 0,
+            "models": [model.get("model", "") for model in models if isinstance(model, dict)],
+            "rotation": provider.get("rotation", {"strategy": "round_robin"}),
+        }
+    return {
+        "ok": True,
+        "primary_provider": raw.get("primary_provider", ""),
+        "providers": summary,
+        "telegram_configured": bool(raw.get("telegram", {}).get("bot_token", "")) if isinstance(raw.get("telegram"), dict) else False,
+    }
+
+
+def next_provider_key(provider_id: str) -> dict[str, Any]:
+    raw = load_config()
+    providers = raw.get("providers", {})
+    if not isinstance(providers, dict) or provider_id not in providers:
+        return {"ok": False, "error": f"provider not configured: {provider_id}"}
+    provider = providers[provider_id]
+    if not isinstance(provider, dict):
+        return {"ok": False, "error": f"invalid provider config: {provider_id}"}
+    keys = provider.get("keys", [])
+    if not isinstance(keys, list) or not keys:
+        return {"ok": False, "error": f"provider has no keys: {provider_id}"}
+
+    state = load_rotation_state()
+    current_index = state.get(provider_id, 0) % len(keys)
+    state[provider_id] = (current_index + 1) % len(keys)
+    save_json(ROTATION_STATE_PATH, state)
+
+    models = provider.get("models", [])
+    primary_model = ""
+    if isinstance(models, list) and models:
+        sorted_models = sorted(
+            [model for model in models if isinstance(model, dict)],
+            key=lambda model: int(model.get("priority", 100)),
+        )
+        if sorted_models:
+            primary_model = str(sorted_models[0].get("model", ""))
+
+    return {
+        "ok": True,
+        "provider": provider_id,
+        "base_url": provider.get("base_url", ""),
+        "api_key_header": provider.get("api_key_header", "Authorization"),
+        "key_index": current_index,
+        "key_count": len(keys),
+        "api_key": str(keys[current_index]),
+        "primary_model": primary_model,
+    }
 
 
 def run_command(args: list[str], timeout: int = 20) -> dict[str, Any]:
@@ -222,6 +304,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/screen/dump":
             self.respond(ui_dump())
             return
+        if self.path == "/providers":
+            self.respond(provider_summary())
+            return
         self.respond({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
@@ -259,6 +344,10 @@ class Handler(BaseHTTPRequestHandler):
                     int(body.get("duration_ms", 300)),
                 )
             )
+            return
+        if self.path == "/providers/next-key":
+            provider_id = str(body.get("provider", load_config().get("primary_provider", "")))
+            self.respond(next_provider_key(provider_id))
             return
         self.respond({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 

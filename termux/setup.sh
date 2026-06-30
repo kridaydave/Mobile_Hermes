@@ -7,16 +7,30 @@ pkg install -y android-tools git python termux-api
 mkdir -p "$HOME/.mobile-hermes/logs"
 
 CONFIG="$HOME/.mobile-hermes/config.json"
-if [ ! -f "$CONFIG" ]; then
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+LOCAL_CONFIG="$SCRIPT_DIR/config.local.json"
+DOWNLOAD_CONFIG="/sdcard/Download/mobile-hermes-config.json"
+
+if [ -f "$LOCAL_CONFIG" ]; then
+  cp "$LOCAL_CONFIG" "$CONFIG"
+  chmod 600 "$CONFIG"
+  echo "Installed local Mobile Hermes config from $LOCAL_CONFIG."
+elif [ -f "$DOWNLOAD_CONFIG" ]; then
+  cp "$DOWNLOAD_CONFIG" "$CONFIG"
+  chmod 600 "$CONFIG"
+  echo "Installed local Mobile Hermes config from $DOWNLOAD_CONFIG."
+elif [ ! -f "$CONFIG" ]; then
   cat > "$CONFIG" <<'JSON'
 {
   "bridge_host": "127.0.0.1",
   "bridge_port": 8765,
-  "primary_provider": "opencode_go",
-  "opencode_go_api_key": "",
-  "openrouter_api_keys": [],
-  "telegram_bot_token": "",
-  "telegram_allowed_user_ids": [],
+  "primary_provider": "opencode",
+  "providers": {},
+  "telegram": {
+    "bot_token": "",
+    "allowed_user_ids": [],
+    "proactive_enabled": true
+  },
   "risk_policy": {
     "ask_before_send_messages": true,
     "ask_before_delete": true,
@@ -29,8 +43,10 @@ if [ ! -f "$CONFIG" ]; then
 JSON
 fi
 
-chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh 2>/dev/null || true
+chmod +x mobile-hermes-start.sh mobile-hermes-stop.sh mobile-hermes-status.sh mobile-hermes-config-summary.sh mobile-hermes-set-telegram.sh 2>/dev/null || true
 
 echo "Mobile Hermes Termux setup complete."
-echo "Edit $CONFIG with your API keys, then run: sh mobile-hermes-start.sh"
-
+echo "Config lives at $CONFIG"
+echo "Check config without printing keys: sh mobile-hermes-config-summary.sh"
+echo "Set Telegram token locally: sh mobile-hermes-set-telegram.sh"
+echo "Run: sh mobile-hermes-start.sh"
