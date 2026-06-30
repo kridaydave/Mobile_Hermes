@@ -33,6 +33,10 @@ class BridgeClient(
         withContext(Dispatchers.IO) { get("/providers") }
     }
 
+    suspend fun setupStatus(): Result<String> = runCatching {
+        withContext(Dispatchers.IO) { get("/setup/status") }
+    }
+
     private fun get(path: String): String {
         val connection = open(path, "GET")
         return connection.useResponse()

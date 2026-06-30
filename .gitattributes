@@ -1,0 +1,2 @@
+termux/*.sh text eol=lf
+termux/*.py text eol=lf
